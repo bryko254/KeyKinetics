@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Assign Sales Person</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        select {
+            font-size: 16px !important;
+            height: 50px !important;
+        }
+        .btn-primary {
+            height: 50px;
+            font-size: 18px;
+        }
+        .vehicle-info {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header text-center py-3">
+                <h2 class="mb-0">Select Sales Person</h2>
+            </div>
+            <div class="card-body">
+                <div class="vehicle-info">
+                    <h5 class="text-center mb-3">Vehicle Details</h5>
+                    <p class="mb-2"><strong>Make:</strong> {{ vehicle.make }}</p>
+                    <p class="mb-2"><strong>Model:</strong> {{ vehicle.model }}</p>
+                    <p class="mb-2"><strong>Year:</strong> {{ vehicle.year }}</p>
+                    <p class="mb-0"><strong>Number Plate:</strong> {{ vehicle.number_plate }}</p>
+                </div>
+                
+                <form id="assignForm" method="post">
+                    {% csrf_token %}
+                    <div class="form-group mb-4">
+                        <select class="form-control form-control-lg" name="sales_person" id="sales_person" required>
+                            <option value="">Select your name</option>
+                            {% for sales_person in sales_persons %}
+                                <option value="{{ sales_person.id }}">{{ sales_person.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Assign Vehicle to Me</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.getElementById('assignForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.status === 'success') {
+                // Close the window after success
+                window.close();
+            }
+        })
+        .catch(error => {
+            alert('An error occurred. Please try again.');
+        });
+    });
+    </script>
+</body>
+</html> 

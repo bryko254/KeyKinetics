@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Key Analytics - Key Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .navbar { background-color: #2c3e50; padding: 1rem; }
+        .navbar-brand { color: white !important; font-size: 1.5rem; }
+        .nav-link { color: rgba(255,255,255,0.8); margin: 0 10px; }
+        .nav-link:hover { color: white; }
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stats-card {
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <span class="navbar-brand">Key Analytics</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="ms-auto d-flex align-items-center">
+                    <a href="{% url 'reports:dashboard' %}" class="nav-link px-3">Dashboard</a>
+                    <a href="{% url 'reports:vehicle-analytics' %}" class="nav-link px-3">Vehicles</a>
+                    <a href="{% url 'reports:key-analytics' %}" class="nav-link px-3">Keys</a>
+                    <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link px-3 btn btn-link">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Duration Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-clock"></i> Average Duration</h5>
+                        <h2>{{ duration_stats.avg_duration|default:"N/A" }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-arrow-down"></i> Min Duration</h5>
+                        <h2>{{ duration_stats.min_duration|default:"N/A" }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card card bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-arrow-up"></i> Max Duration</h5>
+                        <h2>{{ duration_stats.max_duration|default:"N/A" }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Key Types Chart -->
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5>Key Types Distribution</h5>
+                    <canvas id="keyTypesChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Storage Stats Chart -->
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5>Storage Location Stats</h5>
+                    <canvas id="storageStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data -->
+    {{ key_types|json_script:"key-types-data" }}
+    {{ storage_stats|json_script:"storage-stats-data" }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const keyTypesData = JSON.parse(document.getElementById('key-types-data').textContent);
+                const storageStatsData = JSON.parse(document.getElementById('storage-stats-data').textContent);
+
+                // Key Types Chart
+                new Chart(document.getElementById('keyTypesChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: keyTypesData.map(item => item.key_type),
+                        datasets: [{
+                            data: keyTypesData.map(item => item.count),
+                            backgroundColor: [
+                                '#28a745',
+                                '#dc3545',
+                                '#ffc107',
+                                '#17a2b8'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+
+                // Storage Stats Chart
+                new Chart(document.getElementById('storageStatsChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: storageStatsData.map(item => item.name),
+                        datasets: [
+                            {
+                                label: 'Total Keys',
+                                data: storageStatsData.map(item => item.total_keys),
+                                backgroundColor: '#007bff'
+                            },
+                            {
+                                label: 'Available Keys',
+                                data: storageStatsData.map(item => item.available_keys),
+                                backgroundColor: '#28a745'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error initializing charts:', error);
+            }
+        });
+    </script>
+</body>
+</html> 
